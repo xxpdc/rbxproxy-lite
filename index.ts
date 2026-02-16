@@ -1,30 +1,33 @@
 const axios = require('axios');
 
 export default async function handler(req, res) {
+    // Standard headers to allow Roblox to talk to the proxy
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     
-    // Grabs everything after your .app/ domain
-    let path = req.url.split('/').slice(1).join('/');
+    // Grabs everything after the .app/ in the URL
+    const fullPath = req.url.split('/').slice(1).join('/');
     
-    if (!path) return res.status(200).send("Proxy is active!");
+    if (!fullPath) return res.status(200).send("Proxy is online!");
 
     try {
-        // Assembly of the target URL
-        const targetUrl = `https://${path}`;
+        // We use a clean target URL without manual slash manipulation
+        const targetUrl = `https://${fullPath}`;
 
         const response = await axios.get(targetUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://www.roblox.com/'
+                'User-Agent': 'Roblox/WinInet', // Makes the request look like it's from Roblox
+                'Accept': 'application/json'
             }
         });
         res.status(200).json(response.data);
     } catch (error) {
-        // Returns the exact error from Roblox for debugging
+        // This will tell us EXACTLY what Roblox is complaining about
         res.status(error.response?.status || 500).json({
             error: "Roblox API Error",
             code: error.response?.status,
-            message: error.message
+            message: error.message,
+            attempted: `https://${fullPath}`
         });
     }
 }
