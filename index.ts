@@ -3,17 +3,23 @@ const axios = require('axios');
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
-    // We get the path after your domain (e.g., /games.roblox.com/v1/...)
-    const path = req.url.split('/').slice(1).join('/');
+    // This part takes everything after your vercel domain and uses it as the URL
+    const fullPath = req.url.split('/').slice(1).join('/');
     
-    if (!path) {
-        return res.status(200).send("Proxy is active! Use a Roblox API path to fetch data.");
+    if (!fullPath) {
+        return res.status(200).send("Proxy is online! Use a path like /games.roblox.com/v1/...");
     }
 
     try {
-        const response = await axios.get(`https://${path}`);
+        // We add the https:// back here manually to ensure it's correct
+        const response = await axios.get(`https://${fullPath}`);
         res.status(200).json(response.data);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch from Roblox", message: error.message });
+        // This is what you saw in your screenshot
+        res.status(error.response?.status || 500).json({
+            error: "Failed to fetch from Roblox",
+            message: error.message,
+            attemptedUrl: `https://${fullPath}`
+        });
     }
 }
